@@ -34,8 +34,14 @@ Future<List<Movie>> loadMovies() async {
   return movies;
 }
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  String _searchQuery = '';
 
   @override
   Widget build(BuildContext context) {
@@ -51,6 +57,13 @@ class HomePage extends StatelessWidget {
             return Center(child: Text('Erreur: ${snapshot.error}'));
           }
           final movies = snapshot.data!;
+          final filteredMovies = movies
+              .where(
+                (movie) => movie.title.toLowerCase().contains(
+                  _searchQuery.toLowerCase(),
+                ),
+              )
+              .toList();
           return ListView.builder(
             itemCount: movies.length,
             itemBuilder: (context, index) {
