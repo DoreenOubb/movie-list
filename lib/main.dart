@@ -42,13 +42,20 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String _searchQuery = '';
+  late Future<List<Movie>> _moviesFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _moviesFuture = loadMovies();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Movies')),
       body: FutureBuilder<List<Movie>>(
-        future: loadMovies(),
+        future: _moviesFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -64,26 +71,47 @@ class _HomePageState extends State<HomePage> {
                 ),
               )
               .toList();
-          return ListView.builder(
-            itemCount: movies.length,
-            itemBuilder: (context, index) {
-              final movie = movies[index];
-              return ListTile(
-                leading: Image.network(
-                  movie.poster,
-                  width: 50,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const SizedBox(
-                      width: 50,
-                      height: 50,
-                      child: Icon(Icons.movie),
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextField(
+                  decoration: const InputDecoration(
+                    labelText: 'Rechercher un film',
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: filteredMovies.length,
+                  itemBuilder: (context, index) {
+                    final movie = filteredMovies[index];
+                    return ListTile(
+                      leading: Image.network(
+                        movie.poster,
+                        width: 50,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const SizedBox(
+                            width: 50,
+                            height: 50,
+                            child: Icon(Icons.movie),
+                          );
+                        },
+                      ),
+                      title: Text(movie.title),
+                      subtitle: Text(movie.genre),
                     );
                   },
                 ),
-                title: Text(movie.title),
-                subtitle: Text(movie.genre),
-              );
-            },
+              ),
+            ],
           );
         },
       ),
