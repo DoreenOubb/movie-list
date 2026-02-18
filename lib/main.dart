@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'movie.dart';
+import 'movie_detail_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -94,6 +95,14 @@ class _HomePageState extends State<HomePage> {
                   itemBuilder: (context, index) {
                     final movie = filteredMovies[index];
                     return ListTile(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => MovieDetailPage(movie: movie),
+                          ),
+                        );
+                      },
                       leading: Image.network(
                         movie.poster,
                         width: 50,
