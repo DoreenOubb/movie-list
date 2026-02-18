@@ -56,7 +56,17 @@ class HomePage extends StatelessWidget {
             itemBuilder: (context, index) {
               final movie = movies[index];
               return ListTile(
-                leading: Image.network(movie.poster, width: 50),
+                leading: Image.network(
+                  movie.poster,
+                  width: 50,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const SizedBox(
+                      width: 50,
+                      height: 50,
+                      child: Icon(Icons.movie),
+                    );
+                  },
+                ),
                 title: Text(movie.title),
                 subtitle: Text(movie.genre),
               );
