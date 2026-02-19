@@ -8,6 +8,7 @@ void main() {
   runApp(const MyApp());
 }
 
+// --- Configuration de l'application et thème sombre ---
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -16,13 +17,18 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Movie List',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.deepPurple,
+          brightness: Brightness.dark,
+        ),
+        scaffoldBackgroundColor: const Color(0xFF1A1A1A),
       ),
       home: const HomePage(),
     );
   }
 }
 
+// --- Chargement et tri des films depuis le JSON ---
 Future<List<Movie>> loadMovies() async {
   final String data = await rootBundle.loadString('assets/movies.json');
   final List<dynamic> jsonList = json.decode(data);
@@ -35,6 +41,7 @@ Future<List<Movie>> loadMovies() async {
   return movies;
 }
 
+// --- Page d'accueil avec recherche et grille de films ---
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
   @override
@@ -54,7 +61,16 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Movies')),
+      // --- AppBar avec titre centré ---
+      appBar: AppBar(
+        title: const Text(
+          'Movies',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
+      ),
       body: FutureBuilder<List<Movie>>(
         future: _moviesFuture,
         builder: (context, snapshot) {
@@ -64,6 +80,8 @@ class _HomePageState extends State<HomePage> {
           if (snapshot.hasError) {
             return Center(child: Text('Erreur: ${snapshot.error}'));
           }
+
+          // --- Filtrage des films par recherche ---
           final movies = snapshot.data!;
           final filteredMovies = movies
               .where(
@@ -72,8 +90,10 @@ class _HomePageState extends State<HomePage> {
                 ),
               )
               .toList();
+
           return Column(
             children: [
+              // --- Barre de recherche ---
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: TextField(
@@ -89,33 +109,138 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
               ),
+
+              // --- Grille responsive de films ---
               Expanded(
-                child: ListView.builder(
-                  itemCount: filteredMovies.length,
-                  itemBuilder: (context, index) {
-                    final movie = filteredMovies[index];
-                    return ListTile(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => MovieDetailPage(movie: movie),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    int crossAxisCount = 2;
+                    if (constraints.maxWidth > 900) {
+                      crossAxisCount = 4;
+                    } else if (constraints.maxWidth > 600) {
+                      crossAxisCount = 3;
+                    }
+                    return GridView.builder(
+                      physics: const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
+                      ),
+                      padding: const EdgeInsets.all(8),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        childAspectRatio: 0.55,
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                      ),
+                      itemCount: filteredMovies.length,
+                      itemBuilder: (context, index) {
+                        final movie = filteredMovies[index];
+
+                        // --- Navigation vers la page de détail avec transition fade ---
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              PageRouteBuilder(
+                                pageBuilder:
+                                    (context, animation, secondaryAnimation) =>
+                                        MovieDetailPage(movie: movie),
+                                transitionsBuilder:
+                                    (
+                                      context,
+                                      animation,
+                                      secondaryAnimation,
+                                      child,
+                                    ) {
+                                      return FadeTransition(
+                                        opacity: animation,
+                                        child: child,
+                                      );
+                                    },
+                                transitionDuration: const Duration(
+                                  milliseconds: 400,
+                                ),
+                              ),
+                            );
+                          },
+
+                          // --- Card du film : poster, titre, genre, note ---
+                          child: Card(
+                            clipBehavior: Clip.antiAlias,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // --- Affiche du film avec fallback en cas d'erreur ---
+                                Expanded(
+                                  flex: 3,
+                                  child: Image.network(
+                                    movie.poster,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.grey[300],
+                                        child: const Icon(
+                                          Icons.movie,
+                                          size: 50,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+
+                                // --- Infos du film : titre, genre, note IMDb ---
+                                Expanded(
+                                  flex: 2,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          movie.title,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          movie.genre,
+                                          style: TextStyle(
+                                            color: Colors.grey[600],
+                                            fontSize: 12,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const Spacer(),
+                                        Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.star,
+                                              color: Colors.amber,
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              movie.imdbRating,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       },
-                      leading: Image.network(
-                        movie.poster,
-                        width: 50,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const SizedBox(
-                            width: 50,
-                            height: 50,
-                            child: Icon(Icons.movie),
-                          );
-                        },
-                      ),
-                      title: Text(movie.title),
-                      subtitle: Text(movie.genre),
                     );
                   },
                 ),
